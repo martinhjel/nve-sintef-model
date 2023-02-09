@@ -1,0 +1,2 @@
+from .skriv_prisrekke_fil import skriv_prisrekke_fil
+from .les_prisrekke_fil import les_prisrekke_fil
