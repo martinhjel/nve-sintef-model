@@ -25,7 +25,6 @@ def main():
     r = Prognoseresultater()
 
     # Lag sti til modellmappe
-    #modellmappe = r"X:\Prosjekter\2022_Magasinprognose\Prognoser\Uke_46\Simuleringer\Basis\emps"
 
     # Les data fra modellmappe inn til Prognoseresultater-objekt
     r.les_data(modellmappe)
@@ -74,7 +73,6 @@ class Prognoseresultater:
 
     Fungerer bare for versjon 9.9 av Samkjøringsmodellen.
 
-    Laget av haen 3.11.2021
     """
 
     # TODO: Bytt ut lister med np.array for mer effektive lesefunksjoner
