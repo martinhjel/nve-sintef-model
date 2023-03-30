@@ -1,0 +1,54 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "nve_sintef_model"
+version = "0.0.1"
+description = "A python library of functions for using SINTEF models."
+authors = ["NVE <alro@nve.no>"]
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^1.5.3"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.2.2"
+black = "^23.3.0"
+isort = "^5.6.4"
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+(
+    /(
+        \.eggs         # exclude a few common directories in the
+      | \.git          # root of the project
+      | \.hg
+      | \.mypy_cache
+      | \.tox
+      | \.venv
+      | _build
+      | buck-out
+      | build
+      | dist
+    )/
+)
+'''
+
+[tool.isort]
+profile = "black"
+src_paths = ["nve_sintef_model"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
