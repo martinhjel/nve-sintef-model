@@ -1,97 +1,137 @@
-import os
+from enum import Enum
+from typing import Union, Callable
+from pathlib import Path
 import pandas as pd
-import numpy  as np
+import numpy as np
 
 from .read_io_enmres import read_io_enmres
 
-class Enmres(object):
-    """
-    Henter data fra ENMRES.DATA
-    """
-    
-    # TODO: Implementer resten av objektene i self._output
-    
-    def __init__(self, model_dir, filename="ENMRES.DATA"):
-        """
-        model_dir - sti til modellmappe
-        filename  - navn paa ENMRES-fil
-        """
-        
-        self._output  = None
-        self._objects = dict()
-        
-        self.path = os.path.join(model_dir, filename)
-        
-        self._aggfuncs = {"v"       : np.min, 
-                          "totmag"  : np.min,
-                          "flom"    : np.sum,
-                          "treg"    : np.sum,
-                          "tureg"   : np.sum,
-                          "elpump"  : np.sum,
-                          "qpump"   : np.sum}
-        
-    def get_pkrv(self):
-        "df[aar,uke,tsnitt] Kraftverdi"
-        return self._get_df("pkrv")
-        
-    def get_v(self):
-        "df[aar,uke] Vannverdi"
-        return self._get_df("v")
-    
-    def get_totmag(self):
-        "df[aar,uke] Magasininnhold i enmagasinmodellen (GWh)"
-        return self._get_df("totmag")
-    
-    def get_flom(self):
-        "df[aar,uke] Flom i enmagasinmodellen"
-        return self._get_df("flom")
-    
-    def get_tapp(self):
-        "df[aar,uke,tsnitt] Tapping fra magasinet"
-        return self._get_df("tapp")
-    
-    def get_treg(self):
-        "df[aar,uke] Regulert tilsig"
-        return self._get_df("treg")
-    
-    def get_tureg(self):
-        "df[aar,uke] Uregulert tilsig"
-        return self._get_df("tureg")
-    
-    def get_fastk(self):
-        "df[aar,uke,tsnitt] Fastkraft (GWh)"
-        return self._get_df("fastk")
-    
-    def get_peg(self):
-        "df[aar,uke,tsnitt] Sum produksjon (- ELPUMP)"
-        return self._get_df("peg")
-    
-    def get_pr(self):
-        "df[aar,uke,tsnitt] Mengde kjop/salg"
-        return self._get_df("pr")
-    
-    def get_elpump(self):
-        "df[aar,uke] Energi brukt til pumping"
-        return self._get_df("elpump")
 
-    def get_qpump(self):
-        "df[aar,uke] Energi vunnet ved pumping"
-        return self._get_df("qpump")
-    
-    def _get_df(self, name):
-        if name in self._objects:
-            return self._objects[name]
+class EnmresProperty(Enum):
+    PKRV="pkrv"
+    V="v"
+    TOTMAG="totmag"
+    FLOM="flom"
+    TAPP="tapp"
+    TREG="treg"
+    TUREG="tureg"
+    FASTK="fastk"
+    PEG="peg"
+    PR="pr"
+    ELPUMP="elpump"
+    QPUMP="qpump"
+
+
+class Enmres:
+    """
+    Retrieves data from ENMRES.DATA
+    """
+
+    def __init__(self, file: Union[str, Path]):
+        """
+        Initializes the Enmres object.
+
+        Parameters
+        ----------
+        file : Union[str, Path]
+            Path to the ENMRES file.
+        """
+
+        self._output = None
+        self._objects = dict()
+
+        if isinstance(file, str):
+            file = Path(file)
+
+        if not file.is_file():
+            raise FileNotFoundError(f"The file '{file}' does not exist or is not a valid file.")
+
+        self.path = file
+
+        self._aggfuncs = {
+            EnmresProperty.V: np.min,
+            EnmresProperty.TOTMAG: np.min,
+            EnmresProperty.FLOM: np.sum,
+            EnmresProperty.TREG: np.sum,
+            EnmresProperty.TUREG: np.sum,
+            EnmresProperty.ELPUMP: np.sum,
+            EnmresProperty.QPUMP: np.sum,
+        }
+
+    def _get_df(self, enmres_property: EnmresProperty) -> pd.DataFrame:
+        """
+        Returns the data for the specified property.
+
+        Parameters
+        ----------
+        enmres_property : EnmresProperty
+            The EnmresProperty enum value representing the desired data property.
+
+        Returns
+        -------
+        pd.DataFrame
+            The corresponding data as a Pandas DataFrame.
+        """
+
+        if enmres_property.value in self._objects:
+            return self._objects[enmres_property.value]
         if not self._output:
             self._set_output()
-        cols = ["aar", "uke", "tsnitt"] + [name]
-        rows = self._output.pop(name)
+        cols = ["aar", "uke", "tsnitt"] + [enmres_property.value]
+        rows = self._output.pop(enmres_property.value)
         df = pd.DataFrame(rows, columns=cols)
-        aggf = self._aggfuncs.get(name)
+        aggf = self._aggfuncs.get(enmres_property)
         if aggf:
-            df = df.pivot_table(index=["aar", "uke"], values=name, aggfunc=aggf)
+            df = df.pivot_table(index=["aar", "uke"], values=enmres_property.value, aggfunc=aggf)
             df = df.reset_index()
-        self._objects[name] = df
+        self._objects[enmres_property.value] = df
         return df
-    
-    def _set_output(self):
+
+    def _set_output(self) -> None:
+        """
+        Reads the data from the ENMRES file and sets the output dictionary.
+        """
+
         self._output = read_io_enmres(self.path)
+
+    def get_data(self, enmres_property: EnmresProperty) -> pd.DataFrame:
+        """
+        Returns the data for the specified property.
+
+        Parameters
+        ----------
+        enmres_property : EnmresProperty
+            The EnmresProperty enum value representing the desired data property.
+
+        Returns
+        -------
+        pd.DataFrame
+            The corresponding data as a Pandas DataFrame.
+        """
+
+        return self._get_df(enmres_property)
+
+    def __getattr__(self, enmres_property_value: str) -> Callable[[], pd.DataFrame]:
+        """
+        Returns a method that retrieves the data for the specified property.
+
+        Parameters
+        ----------
+        enmres_property_value : str
+            The EnmresProperty enum value representing the desired data property.
+
+        Returns
+        -------
+        Callable[[], pd.DataFrame]
+            A method that returns the corresponding data as a Pandas DataFrame when called.
+        """
+        def get_enum(value):
+            for i in EnmresProperty:
+                if i.value == value:
+                    return i
+            return None
+        enmres_property = get_enum(enmres_property_value)
+        if enmres_property:
+            return self.get_data(enmres_property)
+        else:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{enmres_property_value}'")
