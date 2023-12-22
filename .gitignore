@@ -130,3 +130,12 @@ dmypy.json
 
 .DS_Store
 .vscode/settings.json
+config.yml
+NO_1.csv
+NO_2.csv
+NO_3.csv
+NO_4.csv
+NO_5.csv
+samres.pkl
+Hydropower_regulated_inflow.xlsx
+Hydropower_unregulated_inflow.xlsx
